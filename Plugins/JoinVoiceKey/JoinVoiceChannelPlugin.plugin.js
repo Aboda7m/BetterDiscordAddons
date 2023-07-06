@@ -3,9 +3,12 @@
  * @displayName Join Voice Channel Plugin
  * @website https://github.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js
  * @source https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js
+ * @version 1.0.0
+ * @author Aboda7m
+ * @description Allows you to join a voice channel using keybinds.
+ * @donate https://example.com/donate
+ * @invite https://example.com/invite
  */
-
-const { PluginUpdater, PluginUtilities } = BdApi;
 
 class JoinVoiceChannelPlugin {
     getName() { return "Join Voice Channel Plugin"; }
@@ -18,7 +21,6 @@ class JoinVoiceChannelPlugin {
     }
 
     start() {
-        PluginUpdater.checkForUpdate(this.getName(), this.getVersion(), "https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js");
         this.registerKeybinds();
     }
 
@@ -109,22 +111,30 @@ class JoinVoiceChannelPlugin {
     }
 }
 
-PluginUpdater.checkForUpdate("Join Voice Channel Plugin", "1.0.0", "https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js");
-PluginUtilities.addStyle("JoinVoiceChannelPlugin", `
-    .keybind-row {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
+class PluginUtilities {
+    static loadSettings(pluginName) {
+        try {
+            return bdPluginStorage.get(pluginName, "settings");
+        } catch (err) {
+            console.error(`Failed to load settings for plugin ${pluginName}:`, err);
+            return {};
+        }
     }
 
-    .keybind-row input[type="text"] {
-        margin-right: 8px;
-        padding: 4px;
-        width: 100px;
-        font-size: 14px;
+    static saveSettings(pluginName, settings) {
+        try {
+            bdPluginStorage.set(pluginName, "settings", settings);
+        } catch (err) {
+            console.error(`Failed to save settings for plugin ${pluginName}:`, err);
+        }
     }
-`);
+}
 
 const joinVoiceChannelPlugin = new JoinVoiceChannelPlugin();
+joinVoiceChannelPlugin.load();
 
-PluginUtilities.add("Join Voice Channel Plugin", joinVoiceChannelPlugin);
+const joinVoiceChannelPluginElement = document.createElement("div");
+joinVoiceChannelPluginElement.id = "JoinVoiceChannelPlugin";
+joinVoiceChannelPluginElement.style.display = "none";
+joinVoiceChannelPluginElement.appendChild(joinVoiceChannelPlugin.getSettingsPanel());
+document.body.appendChild(joinVoiceChannelPluginElement);
