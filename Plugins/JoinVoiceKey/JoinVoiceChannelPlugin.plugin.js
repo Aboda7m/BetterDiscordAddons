@@ -90,24 +90,35 @@ class JoinVoiceChannelPlugin {
         this.keybindHandlers = {};
     }
 
-    handleKeydown(keybindIndex, event) {
-        const keybind = `Digit${keybindIndex}`;
-        if (event.ctrlKey && event.shiftKey && event.code === keybind) {
-            const channelId = this.settings[`channelId${keybindIndex}`]?.trim();
-            if (channelId) {
-                const voiceChannelElement = document.querySelector(`[data-channel-id="${channelId}"]`);
-                if (voiceChannelElement) {
-                    voiceChannelElement.click();
+    
+	handleKeydown(keybindIndex, event) {
+    const keybind = `Digit${keybindIndex}`;
+    if (event.ctrlKey && event.shiftKey && event.code === keybind) {
+        const channelId = this.settings[`channelId${keybindIndex}`]?.trim();
+        if (channelId) {
+            const voiceChannelElement = document.querySelector(`div[data-channel-id="${channelId}"]`);
+            console.log("Selected voice channel element:", voiceChannelElement);
+            if (voiceChannelElement) {
+                const joinButton = voiceChannelElement.querySelector("button[aria-label^='Join']");
+                console.log("Selected join button:", joinButton);
+                if (joinButton) {
+                    joinButton.click();
                 } else {
-                    console.error("Voice channel element not found.");
-                    BdApi.showToast("Failed to join voice channel: Voice channel element not found.", { type: "error" });
+                    console.error("Join button not found.");
+                    BdApi.showToast("Failed to join voice channel: Join button not found.", { type: "error" });
                 }
             } else {
-                console.error("Voice channel ID not set.");
-                BdApi.showToast("Failed to join voice channel: Voice channel ID not set.", { type: "error" });
+                console.error("Voice channel element not found.");
+                BdApi.showToast("Failed to join voice channel: Voice channel element not found.", { type: "error" });
             }
+        } else {
+            console.error("Voice channel ID not set.");
+            BdApi.showToast("Failed to join voice channel: Voice channel ID not set.", { type: "error" });
         }
     }
+}
+
+	
 
     getSettingsPanel() {
         const settingsPanel = document.createElement("div");
