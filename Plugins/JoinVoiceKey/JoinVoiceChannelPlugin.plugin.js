@@ -16,6 +16,21 @@ class JoinVoiceChannelPlugin {
     getVersion() { return "1.0.0"; }
     getAuthor() { return "Aboda7m"; }
 
+    constructor() {
+        this.settingsKey = "JoinVoiceChannelPlugin_Settings";
+        this.defaultKeybinds = {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+        };
+    }
+
     load() {
         this.loadSettings();
     }
@@ -29,23 +44,38 @@ class JoinVoiceChannelPlugin {
     }
 
     loadSettings() {
-        this.settings = PluginUtilities.loadSettings(this.getName(), {});
+        try {
+            this.settings = bdPluginStorage.get(this.getName(), this.settingsKey) || {};
+        } catch (err) {
+            console.error(`Failed to load settings for plugin ${this.getName()}:`, err);
+            this.settings = {};
+        }
+
+        // Apply default keybinds if not set in settings
+        for (let i = 1; i <= 9; i++) {
+            if (!this.settings[`channelId${i}`]) {
+                this.settings[`channelId${i}`] = "";
+                this.settings[`keybind${i}`] = this.defaultKeybinds[i];
+            }
+        }
     }
 
     saveSettings() {
-        PluginUtilities.saveSettings(this.getName(), this.settings);
+        try {
+            bdPluginStorage.set(this.getName(), this.settingsKey, this.settings);
+        } catch (err) {
+            console.error(`Failed to save settings for plugin ${this.getName()}:`, err);
+        }
     }
 
     registerKeybinds() {
         this.keybindHandlers = {};
 
         for (let i = 1; i <= 9; i++) {
-            const keybind = this.settings[`keybind${i}`];
-            if (keybind) {
-                const keydownHandler = this.handleKeydown.bind(this, i);
-                document.addEventListener("keydown", keydownHandler);
-                this.keybindHandlers[i] = keydownHandler;
-            }
+            const keybind = `Digit${i}`;
+            const keydownHandler = this.handleKeydown.bind(this, i);
+            document.addEventListener("keydown", keydownHandler);
+            this.keybindHandlers[i] = keydownHandler;
         }
     }
 
@@ -61,8 +91,8 @@ class JoinVoiceChannelPlugin {
     }
 
     handleKeydown(keybindIndex, event) {
-        const keybind = this.settings[`keybind${keybindIndex}`];
-        if (event.key === keybind) {
+        const keybind = `Digit${keybindIndex}`;
+        if (event.ctrlKey && event.shiftKey && event.code === keybind) {
             const channelId = this.settings[`channelId${keybindIndex}`]?.trim();
             if (channelId) {
                 const voiceChannelElement = document.querySelector(`[data-channel-id="${channelId}"]`);
@@ -70,9 +100,11 @@ class JoinVoiceChannelPlugin {
                     voiceChannelElement.click();
                 } else {
                     console.error("Voice channel element not found.");
+                    BdApi.showToast("Failed to join voice channel: Voice channel element not found.", { type: "error" });
                 }
             } else {
                 console.error("Voice channel ID not set.");
+                BdApi.showToast("Failed to join voice channel: Voice channel ID not set.", { type: "error" });
             }
         }
     }
@@ -81,15 +113,6 @@ class JoinVoiceChannelPlugin {
         const settingsPanel = document.createElement("div");
 
         for (let i = 1; i <= 9; i++) {
-            const keybindInput = document.createElement("input");
-            keybindInput.type = "text";
-            keybindInput.value = this.settings[`keybind${i}`] || "";
-            keybindInput.placeholder = `Keybind ${i}`;
-            keybindInput.addEventListener("input", (event) => {
-                this.settings[`keybind${i}`] = event.target.value;
-                this.saveSettings();
-            });
-
             const channelIdInput = document.createElement("input");
             channelIdInput.type = "text";
             channelIdInput.value = this.settings[`channelId${i}`] || "";
@@ -99,57 +122,30 @@ class JoinVoiceChannelPlugin {
                 this.saveSettings();
             });
 
-            const registerButton = document.createElement("button");
-            registerButton.textContent = "Register";
-            registerButton.addEventListener("click", () => {
-                this.registerKeybind(i, keybindInput.value);
-            });
-
             const keybindRow = document.createElement("div");
             keybindRow.className = "keybind-row";
-            keybindRow.appendChild(keybindInput);
             keybindRow.appendChild(channelIdInput);
-            keybindRow.appendChild(registerButton);
 
             settingsPanel.appendChild(keybindRow);
         }
 
-        return settingsPanel;
-    }
-
-    registerKeybind(index, keybind) {
-        const currentKeybind = this.settings[`keybind${index}`];
-        if (currentKeybind && currentKeybind !== keybind) {
-            document.removeEventListener("keydown", this.keybindHandlers[index]);
-            delete this.keybindHandlers[index];
-        }
-
-        if (keybind) {
-            const keydownHandler = this.handleKeydown.bind(this, index);
-            document.addEventListener("keydown", keydownHandler);
-            this.keybindHandlers[index] = keydownHandler;
-            this.settings[`keybind${index}`] = keybind;
+        const saveButton = document.createElement("button");
+        saveButton.textContent = "Save Settings";
+        saveButton.addEventListener("click", () => {
             this.saveSettings();
-        }
-    }
-}
+        });
 
-class PluginUtilities {
-    static loadSettings(pluginName) {
-        try {
-            return bdPluginStorage.get(pluginName, "settings");
-        } catch (err) {
-            console.error(`Failed to load settings for plugin ${pluginName}:`, err);
-            return {};
-        }
-    }
+        const loadButton = document.createElement("button");
+        loadButton.textContent = "Load Settings";
+        loadButton.addEventListener("click", () => {
+            this.loadSettings();
+            this.updateSettingsPanel();
+        });
 
-    static saveSettings(pluginName, settings) {
-        try {
-            bdPluginStorage.set(pluginName, "settings", settings);
-        } catch (err) {
-            console.error(`Failed to save settings for plugin ${pluginName}:`, err);
-        }
+        settingsPanel.appendChild(saveButton);
+        settingsPanel.appendChild(loadButton);
+
+        return settingsPanel;
     }
 }
 
