@@ -63,8 +63,10 @@ class JoinVoiceChannelPlugin {
     saveSettings() {
         try {
             bdPluginStorage.set(this.getName(), this.settingsKey, this.settings);
+            BdApi.showToast("Settings saved successfully.", { type: "success" });
         } catch (err) {
             console.error(`Failed to save settings for plugin ${this.getName()}:`, err);
+            BdApi.showToast("Failed to save settings.", { type: "error" });
         }
     }
 
@@ -72,10 +74,12 @@ class JoinVoiceChannelPlugin {
         this.keybindHandlers = {};
 
         for (let i = 1; i <= 9; i++) {
-            const keybind = `Digit${i}`;
-            const keydownHandler = this.handleKeydown.bind(this, i);
-            document.addEventListener("keydown", keydownHandler);
-            this.keybindHandlers[i] = keydownHandler;
+            const keybind = this.settings[`keybind${i}`];
+            if (keybind) {
+                const keydownHandler = this.handleKeydown.bind(this, i);
+                document.addEventListener("keydown", keydownHandler);
+                this.keybindHandlers[i] = keydownHandler;
+            }
         }
     }
 
@@ -90,35 +94,30 @@ class JoinVoiceChannelPlugin {
         this.keybindHandlers = {};
     }
 
-    
-	handleKeydown(keybindIndex, event) {
-    const keybind = `Digit${keybindIndex}`;
-    if (event.ctrlKey && event.shiftKey && event.code === keybind) {
-        const channelId = this.settings[`channelId${keybindIndex}`]?.trim();
-        if (channelId) {
-            const voiceChannelElement = document.querySelector(`div[data-channel-id="${channelId}"]`);
-            console.log("Selected voice channel element:", voiceChannelElement);
-            if (voiceChannelElement) {
-                const joinButton = voiceChannelElement.querySelector("button[aria-label^='Join']");
-                console.log("Selected join button:", joinButton);
-                if (joinButton) {
-                    joinButton.click();
+    handleKeydown(keybindIndex, event) {
+        const keybind = this.settings[`keybind${keybindIndex}`];
+        if (event.key === keybind) {
+            const channelId = this.settings[`channelId${keybindIndex}`]?.trim();
+            if (channelId) {
+                const voiceChannelElement = document.querySelector(`div[data-channel-id="${channelId}"]`);
+                if (voiceChannelElement) {
+                    const joinButton = voiceChannelElement.querySelector("button[aria-label^='Join']");
+                    if (joinButton) {
+                        joinButton.click();
+                    } else {
+                        console.error("Join button not found.");
+                        BdApi.showToast("Failed to join voice channel: Join button not found.", { type: "error" });
+                    }
                 } else {
-                    console.error("Join button not found.");
-                    BdApi.showToast("Failed to join voice channel: Join button not found.", { type: "error" });
+                    console.error("Voice channel element not found.");
+                    BdApi.showToast("Failed to join voice channel: Voice channel element not found.", { type: "error" });
                 }
             } else {
-                console.error("Voice channel element not found.");
-                BdApi.showToast("Failed to join voice channel: Voice channel element not found.", { type: "error" });
+                console.error("Voice channel ID not set.");
+                BdApi.showToast("Failed to join voice channel: Voice channel ID not set.", { type: "error" });
             }
-        } else {
-            console.error("Voice channel ID not set.");
-            BdApi.showToast("Failed to join voice channel: Voice channel ID not set.", { type: "error" });
         }
     }
-}
-
-	
 
     getSettingsPanel() {
         const settingsPanel = document.createElement("div");
@@ -130,7 +129,6 @@ class JoinVoiceChannelPlugin {
             channelIdInput.placeholder = "Channel ID";
             channelIdInput.addEventListener("input", (event) => {
                 this.settings[`channelId${i}`] = event.target.value;
-                this.saveSettings();
             });
 
             const keybindRow = document.createElement("div");
@@ -146,15 +144,7 @@ class JoinVoiceChannelPlugin {
             this.saveSettings();
         });
 
-        const loadButton = document.createElement("button");
-        loadButton.textContent = "Load Settings";
-        loadButton.addEventListener("click", () => {
-            this.loadSettings();
-            this.updateSettingsPanel();
-        });
-
         settingsPanel.appendChild(saveButton);
-        settingsPanel.appendChild(loadButton);
 
         return settingsPanel;
     }
