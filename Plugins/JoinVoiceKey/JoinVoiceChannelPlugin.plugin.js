@@ -1,4 +1,11 @@
-//META{"name":"JoinVoiceChannelPlugin","displayName":"Join Voice Channel Plugin","website":"https://github.com/Aboda7m/BetterDiscordAddons/blob/2df18d257005b9588ac9676954be307b268eaae8/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js","source":"https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/2df18d257005b9588ac9676954be307b268eaae8/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js"}*//
+/**
+ * @name JoinVoiceChannelPlugin
+ * @displayName Join Voice Channel Plugin
+ * @website https://github.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js
+ * @source https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js
+ */
+
+const { PluginUpdater, PluginUtilities } = BdApi;
 
 class JoinVoiceChannelPlugin {
     getName() { return "Join Voice Channel Plugin"; }
@@ -6,66 +13,54 @@ class JoinVoiceChannelPlugin {
     getVersion() { return "1.0.0"; }
     getAuthor() { return "Aboda7m"; }
 
-    getSettingsPanel() {
-        const settingsPanel = document.createElement("div");
+    load() {
+        this.loadSettings();
+    }
 
-        const keybindInputs = [];
+    start() {
+        PluginUpdater.checkForUpdate(this.getName(), this.getVersion(), "https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js");
+        this.registerKeybinds();
+    }
 
-        for (let i = 1; i <= 9; i++) {
-            const keybindInput = document.createElement("input");
-            keybindInput.type = "text";
-            keybindInput.value = this.settings[`keybind${i}`] || "";
-            keybindInput.placeholder = `Keybind ${i}`;
-            keybindInput.addEventListener("input", (event) => {
-                this.settings[`keybind${i}`] = event.target.value;
-                this.saveSettings();
-            });
-
-            const label = document.createElement("label");
-            label.textContent = `Keybind ${i}:`;
-            label.appendChild(keybindInput);
-
-            keybindInputs.push(label);
-        }
-
-        for (const keybindInput of keybindInputs) {
-            settingsPanel.appendChild(keybindInput);
-        }
-
-        return settingsPanel;
+    stop() {
+        this.unregisterKeybinds();
     }
 
     loadSettings() {
-        this.settings = this.loadData("JoinVoiceChannelPlugin", "settings") || {};
+        this.settings = PluginUtilities.loadSettings(this.getName(), {});
+    }
+
+    saveSettings() {
+        PluginUtilities.saveSettings(this.getName(), this.settings);
+    }
+
+    registerKeybinds() {
+        this.keybindHandlers = {};
 
         for (let i = 1; i <= 9; i++) {
-            if (!this.settings.hasOwnProperty(`keybind${i}`)) {
-                this.settings[`keybind${i}`] = "";
+            const keybind = this.settings[`keybind${i}`];
+            if (keybind) {
+                const keydownHandler = this.handleKeydown.bind(this, i);
+                document.addEventListener("keydown", keydownHandler);
+                this.keybindHandlers[i] = keydownHandler;
             }
         }
     }
 
-    saveSettings() {
-        this.saveData("JoinVoiceChannelPlugin", "settings", this.settings);
+    unregisterKeybinds() {
+        for (const key in this.keybindHandlers) {
+            if (Object.prototype.hasOwnProperty.call(this.keybindHandlers, key)) {
+                const handler = this.keybindHandlers[key];
+                document.removeEventListener("keydown", handler);
+            }
+        }
+
+        this.keybindHandlers = {};
     }
 
-    start() {
-        const { PluginUtilities } = BdApi;
-        PluginUtilities.checkForUpdate(this.getName(), this.getVersion(), "https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/2df18d257005b9588ac9676954be307b268eaae8/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js");
-
-        this.loadSettings();
-
-        document.addEventListener("keydown", this.handleKeyDown.bind(this));
-    }
-
-    stop() {
-        document.removeEventListener("keydown", this.handleKeyDown.bind(this));
-    }
-
-    handleKeyDown(event) {
-        const keybind = Object.values(this.settings).find((value) => value === event.key);
-        if (keybind) {
-            const keybindIndex = Object.keys(this.settings).findIndex((key) => this.settings[key] === keybind);
+    handleKeydown(keybindIndex, event) {
+        const keybind = this.settings[`keybind${keybindIndex}`];
+        if (event.key === keybind) {
             const channelId = this.settings[`channelId${keybindIndex}`]?.trim();
             if (channelId) {
                 const voiceChannelElement = document.querySelector(`[data-channel-id="${channelId}"]`);
@@ -79,5 +74,57 @@ class JoinVoiceChannelPlugin {
             }
         }
     }
+
+    getSettingsPanel() {
+        const settingsPanel = document.createElement("div");
+
+        for (let i = 1; i <= 9; i++) {
+            const keybindInput = document.createElement("input");
+            keybindInput.type = "text";
+            keybindInput.value = this.settings[`keybind${i}`] || "";
+            keybindInput.placeholder = `Keybind ${i}`;
+            keybindInput.addEventListener("input", (event) => {
+                this.settings[`keybind${i}`] = event.target.value;
+                this.saveSettings();
+            });
+
+            const channelIdInput = document.createElement("input");
+            channelIdInput.type = "text";
+            channelIdInput.value = this.settings[`channelId${i}`] || "";
+            channelIdInput.placeholder = "Channel ID";
+            channelIdInput.addEventListener("input", (event) => {
+                this.settings[`channelId${i}`] = event.target.value;
+                this.saveSettings();
+            });
+
+            const keybindRow = document.createElement("div");
+            keybindRow.className = "keybind-row";
+            keybindRow.appendChild(keybindInput);
+            keybindRow.appendChild(channelIdInput);
+
+            settingsPanel.appendChild(keybindRow);
+        }
+
+        return settingsPanel;
+    }
 }
 
+PluginUpdater.checkForUpdate("Join Voice Channel Plugin", "1.0.0", "https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js");
+PluginUtilities.addStyle("JoinVoiceChannelPlugin", `
+    .keybind-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .keybind-row input[type="text"] {
+        margin-right: 8px;
+        padding: 4px;
+        width: 100px;
+        font-size: 14px;
+    }
+`);
+
+const joinVoiceChannelPlugin = new JoinVoiceChannelPlugin();
+
+PluginUtilities.add("Join Voice Channel Plugin", joinVoiceChannelPlugin);
