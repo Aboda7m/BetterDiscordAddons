@@ -99,15 +99,38 @@ class JoinVoiceChannelPlugin {
                 this.saveSettings();
             });
 
+            const registerButton = document.createElement("button");
+            registerButton.textContent = "Register";
+            registerButton.addEventListener("click", () => {
+                this.registerKeybind(i, keybindInput.value);
+            });
+
             const keybindRow = document.createElement("div");
             keybindRow.className = "keybind-row";
             keybindRow.appendChild(keybindInput);
             keybindRow.appendChild(channelIdInput);
+            keybindRow.appendChild(registerButton);
 
             settingsPanel.appendChild(keybindRow);
         }
 
         return settingsPanel;
+    }
+
+    registerKeybind(index, keybind) {
+        const currentKeybind = this.settings[`keybind${index}`];
+        if (currentKeybind && currentKeybind !== keybind) {
+            document.removeEventListener("keydown", this.keybindHandlers[index]);
+            delete this.keybindHandlers[index];
+        }
+
+        if (keybind) {
+            const keydownHandler = this.handleKeydown.bind(this, index);
+            document.addEventListener("keydown", keydownHandler);
+            this.keybindHandlers[index] = keydownHandler;
+            this.settings[`keybind${index}`] = keybind;
+            this.saveSettings();
+        }
     }
 }
 
