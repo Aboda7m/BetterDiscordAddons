@@ -1,7 +1,7 @@
 /**
  * @name JoinVoiceChannelPlugin
  * @displayName Join Voice Channel Plugin
- * @website https://github.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js
+ * @website https://github.com/Aboda7m/BetterDiscordAddons/blob/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js
  * @source https://raw.githubusercontent.com/Aboda7m/BetterDiscordAddons/master/Plugins/JoinVoiceKey/JoinVoiceChannelPlugin.plugin.js
  * @version 1.0.0
  * @author Aboda7m
