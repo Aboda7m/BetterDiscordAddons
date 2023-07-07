@@ -2,7 +2,7 @@
  * @name EditUsers
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 4.8.2
+ * @version 4.8.3
  * @description Allows you to locally edit Users
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -403,7 +403,7 @@ module.exports = (_ => {
 				}
 				if (e.instance.props.user) {
 					if (this.settings.places.contextMenu) {
-						let userData = this.getUserData(user.id);
+						let userData = this.getUserData(e.instance.props.user.id);
 						if (userData.globalName && userData.globalName != e.instance.props.user.globalName || !userData.globalName && userData.username != e.instance.props.user.username) {
 							let username = userData.globalName || userData.username;
 							let [timeoutChildren, timeoutIndex] = BDFDB.ContextMenuUtils.findItem(e.returnvalue, {id: "timeout"});
@@ -1139,7 +1139,7 @@ module.exports = (_ => {
 				for (let id in changedUsers) if (changedUsers[id] && changedUsers[id].name && changedUsers[id].name.toLocaleLowerCase().indexOf(e.instance.props.query.toLocaleLowerCase()) > -1 && !e.instance.props.results.find(n => n.record && n.record.id == id && n.type == BDFDB.DiscordConstants.AutocompleterResultTypes.USER)) {
 					let user = BDFDB.LibraryStores.UserStore.getUser(id);
 					if (user) e.instance.props.results.splice(1, 0, {
-						comparator: user.discriminator ? `${user.username}#${user.discriminator}` : user.discriminator,
+						comparator: user.isPomelo() ? user.username : `${user.username}#${user.discriminator}`,
 						record: user,
 						score: 30000,
 						type: BDFDB.DiscordConstants.AutocompleterResultTypes.USER
